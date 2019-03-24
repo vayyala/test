@@ -1,5 +1,6 @@
 import os
 import sys
+import codePost
 
 def get_grade_script(student_email, assn_name):
   return '''"import os\\n",
@@ -11,6 +12,7 @@ def flatten(input_dir, output_dir):
   newF = open(output_dir, 'w')
   student_email=input_dir.split('_')[0]
   assn_name=input_dir.split('_')[1].split('.')[0]
+#   upload file to codePost
   for line in oldF:
     newF.write(line.replace("#_ = ok.submit()", get_grade_script(student_email, assn_name)).replace("\"\"", "\""))
   oldF.close()
