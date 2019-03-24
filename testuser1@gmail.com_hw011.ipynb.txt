@@ -620,9 +620,7 @@
    },
    "outputs": [],
    "source": [
-    "import os\n",
-    "test_output = [ok.grade(q[:-3]) for q in os.listdir('tests') if q.startswith('q')]\n",
-    "%run upload_tests.py testuser1@gmail.com hw011 test_output\n"
+    "#_ = ok.submit()"
    ]
   }
  ],
