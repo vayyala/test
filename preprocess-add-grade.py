@@ -5,18 +5,17 @@ import sys
 # install by 'pip install codePost'. Documentation can be found at https://github.com/codepost-io/codePost-python
 import codePost
 
-api_key = "<API - KEY>" # set API key via %env cp_api_key = <API KEY>
+api_key = "API - Key" # set API key via %env cp_api_key = <API KEY>
 course_name = 'New course'
 course_period = '2019'
 
 def get_grade_snippet(student_email, assignment_name):
   return '''"import os\\n",
     "test_output = [ok.grade(q[:-3]) for q in os.listdir('tests') if q.startswith('q')]\\n",
-    "%run upload_tests.py {student_email} {assignment_name} test_output\\n"'''.format(student_email=student_email, assignment_name=assignment_name)
+    "%run upload_tests.py {student_email} {assignment_name} test_output"'''.format(student_email=student_email, assignment_name=assignment_name)
 
 from shutil import copyfile
-
-def flatten(input_dir, output_dir, assignment):
+def flatten(input_dir, output_dir, assignment_name):
     ## if output directory doesnt exist then create it
     if(not os.path.exists(output_dir)):
         os.mkdir(output_dir)
@@ -32,32 +31,34 @@ def flatten(input_dir, output_dir, assignment):
             newF = open(output_dir+'/'+file, 'w')
             student_email=file.split('_')[0]
             for line in oldF:
-                #newF.write(line.replace('_ = ok.auth(inline=True)', '#_ = ok.auth(inline=True)').replace("_ = ok.submit()", "#_ = ok.submit()").replace("4 = 2 + 2", "# 4 = 2 + 2").replace("six = two plus two", "# six = two plus two" ))
-                newF.write(line.replace("#_ = ok.submit()", get_grade_snippet(student_email, assignment["name"])).replace("\"\"", "\""))
+#newF.write(line.replace('_ = ok.auth(inline=True)', '#_ = ok.auth(inline=True)').replace("_ = ok.submit()", "#_ = ok.submit()").replace("4 = 2 + 2", "# 4 = 2 + 2").replace("six = two plus two", "# six = two plus two" ))
+                print(get_grade_snippet(student_email, assignment_name))
+                newF.write(line.replace("##_ = ok.submit()", get_grade_snippet(student_email, assignment_name)).replace("\"\"", "\""))
             oldF.close()
             newF.close()
-
-            # upload to codePost
-            upload_notebook(file, open(temp_dir+'/'+file, 'r').read(), student_email, assignment)
-
             os.remove(temp_dir+'/'+file)
             # print(student_dir+'_'+file)
     os.rmdir(output_dir + "_temp")
     # pass
 
-def upload_notebook(file_name, file_code, student_email, assignment):
-    print(student_email)
-    file_to_upload = {"name": file_name, "code": file_code, "extension": "ipynb"}
-    # syntax: upload_submission(api_key, assignment, students, files, mode=DEFAULT_UPLOAD_MODE)
-    result = codePost.upload_submission(api_key, assignment, [student_email], [file_to_upload], codePost.UploadModes.OVERWRITE)
-    if (result):
-        print("Successfully uploaded notebook for %s" % student_email)
+# Uplaod original student files to codePost
+def upload_notebooks(input_dir, assignment):
+    for file in os.listdir(input_dir):
+        if(file.endswith(".ipynb")):
+            student_email=file.split('_')[0]
+            new_file_name = file.split('_')[1]
+            file_to_upload = {"name": new_file_name, "code": open(input_dir+'/'+file, 'r').read(), "extension": "ipynb"}
+            result = codePost.upload_submission(api_key, assignment, [student_email], [file_to_upload], codePost.UploadModes.OVERWRITE)
+            if (result):
+                print("Successfully uploaded notebook for %s" % student_email)
 
 if __name__ == "__main__":
+    # Get assignment for given assignemnt name
     assignment = codePost.get_assignment_info_by_name(api_key, course_name, course_period, sys.argv[3])
     if(not assignment):
         print(assignment)
         raise Exception("No Assignment found with the given name and course info. Please check to make sure the name is correct.")
 
     # flatten('./ucsb-int5-fa18-hw01','./ucsb-int5-fa18-hw01_flatten')
-    flatten(sys.argv[1],sys.argv[2], assignment)
+    flatten(sys.argv[1],sys.argv[2], assignment["name"])
+    upload_notebooks(sys.argv[1], assignment)
